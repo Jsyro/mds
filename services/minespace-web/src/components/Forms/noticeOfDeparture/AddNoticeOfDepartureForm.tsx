@@ -41,18 +41,22 @@ interface RenderContactsProps {
   fields: FieldArrayFieldsProps<INoDContactInterface>;
 }
 
+export interface AddNoticeOfDepartureFormProps {
+  initialValues: { nod_contacts: [{ is_primary: boolean }] };
+}
+
 interface AddNoticeOfDepartureProps {
   permits: INoDPermit[];
   onSubmit: (
     permitNumber: string,
     values: ICreateNoD,
-    documentArray: INodDocumentPayload
+    documentArray: INodDocumentPayload[]
   ) => Promise<AxiosResponse<INoticeOfDeparture>>;
   closeModal: () => void;
   mineGuid: string;
   handleSubmit?: any;
   change?: (fieldName: string, value: any) => void;
-  initialValues: { nod_contacts: [{ is_primary: boolean }] };
+  initialValues: AddNoticeOfDepartureFormProps;
 }
 
 export const renderContacts: React.FC<RenderContactsProps> = (props) => {
@@ -174,7 +178,7 @@ const AddNoticeOfDepartureForm: React.FC<InjectedFormProps<ICreateNoD> &
 
   const onRemoveFile = (_, fileItem) => {
     const removedDoc = documentArray.find((doc) => doc.document_manager_guid === fileItem.serverId);
-    if (removedDoc.document_type === NOTICE_OF_DEPARTURE_DOCUMENT_TYPE.CHECKLIST) {
+    if (removedDoc?.document_type === NOTICE_OF_DEPARTURE_DOCUMENT_TYPE.CHECKLIST) {
       setHasChecklist(false);
       change("self-assessment", null);
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, FC } from "react";
 import CoreTable from "@/components/common/CoreTable";
 import {
   documentNameColumn,
@@ -17,7 +17,7 @@ import { modalConfig } from "@/components/modalContent/config";
 import { Feature } from "@mds/common";
 import { SizeType } from "antd/lib/config-provider/SizeContext";
 import { ColumnType, ColumnsType } from "antd/es/table";
-import { FileOperations, MineDocument } from "@common/models/documents/document";
+import { FileOperations, MineDocument } from "@mds/common/models/documents/document";
 import {
   DeleteOutlined,
   DownloadOutlined,
@@ -30,37 +30,11 @@ import { downloadFileFromDocumentManager } from "@common/utils/actionlessNetwork
 import { getUserAccessData } from "@common/selectors/authenticationSelectors";
 import { Dropdown, Button, MenuProps } from "antd";
 import { DownOutlined } from "@ant-design/icons";
-import { useFeatureFlag } from "@common/providers/featureFlags/useFeatureFlag";
-
-interface DocumentTableProps {
-  documents: MineDocument[];
-  isLoaded: boolean;
-  isViewOnly: boolean;
-  canArchiveDocuments: boolean;
-  showVersionHistory: boolean;
-  enableBulkActions: boolean;
-  documentParent: string;
-  view: string;
-  openModal: (arg) => void;
-  openDocument: any;
-  closeModal: () => void;
-  removeDocument: (event, doc_guid: string, mine_guid: string) => void;
-  archiveMineDocuments: (mineGuid: string, mineDocumentGuids: string[]) => void;
-  onArchivedDocuments: (docs?: MineDocument[]) => void;
-  onReplaceDocument: (document: MineDocument) => void;
-  documentColumns: ColumnType<unknown>[];
-  additionalColumns: ColumnType<MineDocument>[];
-  defaultSortKeys: string[];
-  excludedColumnKeys: string[];
-  additionalColumnProps: { key: string; colProps: any }[];
-  fileOperationPermissionMap: { operation: FileOperations; permission: string | boolean }[];
-  userRoles: string[];
-  handleRowSelectionChange: (arg1: MineDocument[]) => void;
-  replaceAlertMessage?: string;
-}
+import { useFeatureFlag } from "@mds/common/providers/featureFlags/useFeatureFlag";
+import DocumentTableProps from "@mds/common/interfaces/document/documentTableProps.interface";
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
-export const DocumentTable = ({
+export const DocumentTable: FC<DocumentTableProps> = ({
   isViewOnly = false,
   excludedColumnKeys = [],
   additionalColumnProps = [],
@@ -83,15 +57,14 @@ export const DocumentTable = ({
   const [rowSelection, setRowSelection] = useState([]);
   const [isCompressionModal, setCompressionModal] = useState(false);
   const [isCompressionInProgress, setCompressionInProgress] = useState(false);
-  const [documentTypeCode, setDocumentTypeCode] = useState("");
   const [documentsCanBulkDropDown, setDocumentsCanBulkDropDown] = useState(false);
-
   const { isFeatureEnabled } = useFeatureFlag();
 
   const allowedTableActions = {
     [FileOperations.View]: true,
     [FileOperations.Download]: true,
-    [FileOperations.Replace]: !isViewOnly,
+    // don't allow changes to version history where history is not shown
+    [FileOperations.Replace]: !isViewOnly && showVersionHistory,
     [FileOperations.Archive]:
       !isViewOnly && canArchiveDocuments && isFeatureEnabled(Feature.MAJOR_PROJECT_ARCHIVE_FILE),
     [FileOperations.Delete]: !isViewOnly && removeDocument !== undefined,
@@ -152,6 +125,7 @@ export const DocumentTable = ({
     event.preventDefault();
     openModal({
       props: {
+        DocumentTable,
         title: `Delete ${docs?.length > 1 ? "Multiple Files" : "File"}`,
         closeModal: closeModal,
         handleSubmit: async () => {
@@ -282,10 +256,6 @@ export const DocumentTable = ({
     ? { size: "small" as SizeType, rowClassName: "ant-table-row-minimal" }
     : null;
 
-  const handleRowSelectionChange = (value) => {
-    setRowSelection(value);
-  };
-
   const bulkItems: MenuProps["items"] = [
     {
       key: "0",
@@ -319,41 +289,6 @@ export const DocumentTable = ({
     },
   ];
 
-  const rowSelectionObject: any = {
-    onChange: (selectedRowKeys: React.Key[], selectedRows: any) => {
-      handleRowSelectionChange(selectedRows);
-    },
-  };
-
-  const bulkActionsProps = enableBulkActions
-    ? {
-      rowSelection: {
-        type: "checkbox",
-        ...rowSelectionObject,
-      },
-    }
-    : {};
-
-  const versionProps = showVersionHistory
-    ? {
-      expandProps: {
-        childrenColumnName: "versions",
-        matchChildColumnsToParent: true,
-        recordDescription: "version history",
-        rowExpandable: (record) => record.number_prev_versions > 0,
-      },
-    }
-    : {};
-
-  const coreTableProps = {
-    condition: isLoaded,
-    dataSource: documents,
-    columns: columns,
-    ...bulkActionsProps,
-    ...versionProps,
-    ...minimalProps,
-  };
-
   const renderBulkActions = () => {
     let element = (
       <Button
@@ -384,10 +319,49 @@ export const DocumentTable = ({
     return enableBulkActions && <div style={{ float: "right" }}>{element}</div>;
   };
 
+  const handleRowSelectionChange = (value) => {
+    setRowSelection(value);
+  };
+
+  const rowSelectionObject: any = {
+    onChange: (selectedRowKeys: React.Key[], selectedRows: any) => {
+      handleRowSelectionChange(selectedRows);
+    },
+  };
+
+  const bulkActionsProps = enableBulkActions
+    ? {
+        rowSelection: {
+          type: "checkbox",
+          ...rowSelectionObject,
+        },
+      }
+    : {};
+
+  const versionProps = showVersionHistory
+    ? {
+        expandProps: {
+          childrenColumnName: "versions",
+          matchChildColumnsToParent: true,
+          recordDescription: "version history",
+          rowExpandable: (record) => record.number_prev_versions > 0,
+        },
+      }
+    : {};
+
+  const coreTableProps = {
+    condition: isLoaded,
+    dataSource: documents,
+    columns: columns,
+    ...bulkActionsProps,
+    ...versionProps,
+    ...minimalProps,
+  };
+
   return (
     <div>
       <DocumentCompression
-        documentType={documentTypeCode}
+        documentType={""}
         rows={rowSelection}
         setCompressionModalVisible={setCompressionModal}
         isCompressionModalVisible={isCompressionModal}

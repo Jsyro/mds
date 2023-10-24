@@ -20,7 +20,7 @@ import InformationRequirementsTableEntryTab from "./InformationRequirementsTable
 import MajorMineApplicationEntryTab from "./MajorMineApplicationEntryTab";
 import DocumentsTab from "./DocumentsTab";
 import { MAJOR_MINE_APPLICATION_SUBMISSION_STATUSES } from "./MajorMineApplicationPage";
-import withFeatureFlag from "@common/providers/featureFlags/withFeatureFlag";
+import withFeatureFlag from "@mds/common/providers/featureFlags/withFeatureFlag";
 
 const propTypes = {
   mines: PropTypes.arrayOf(CustomPropTypes.mine).isRequired,
@@ -169,7 +169,8 @@ export class ProjectPage extends Component {
       if (["DFT", "CHR"].includes(status)) {
         return this.props.history.push({
           pathname: router.EDIT_MAJOR_MINE_APPLICATION.dynamicRoute(
-            this.props.project.project_guid
+            this.props.project.project_guid,
+            this.props.project.major_mine_application?.major_mine_application_guid
           ),
           state: { current: 1 },
         });

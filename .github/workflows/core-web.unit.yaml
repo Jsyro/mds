@@ -28,11 +28,14 @@ jobs:
       - name: Upgrade yarn
         run: npm install -g yarn
 
+      - name: Set Fontawesome token
+        run: |
+          yarn config set 'npmScopes["fortawesome"].npmAuthIdent' "${{ secrets.ARTIFACTORY_TOKEN }}"
+          yarn config set 'npmScopes["fortawesome"].npmAlwaysAuth' true
+          yarn config set 'npmScopes["fortawesome"].npmRegistryServer' "https://artifacts.developer.gov.bc.ca/artifactory/api/npm/m4c2-mds/"
+
       - name: Install Dependencies
         run: yarn install
-
-      - name: Build Common Package
-        run: yarn workspace @mds/common build
 
       - name: Run frontend tests
         run: cd services/core-web/ && yarn && yarn test
@@ -47,8 +50,8 @@ jobs:
       - name: Run cypress tests
         run: yarn workspace @mds/core-web cypress run
         env:
-          CYPRESS_TEST_USER: ${{ secrets.CYPRESS_TEST_USER }}
-          CYPRESS_TEST_PASSWORD: ${{ secrets.CYPRESS_TEST_PASSWORD }}
+          CYPRESS_TEST_USER: ${{ secrets.CYPRESS_CORE_USER }}
+          CYPRESS_TEST_PASSWORD: ${{ secrets.CYPRESS_CORE_PASSWORD }}
           CYPRESS_CORE_WEB_TEST_URL: ${{ secrets.CYPRESS_CORE_WEB_TEST_URL }}
           CYPRESS_BACKEND: ${{ secrets.CYPRESS_BACKEND }}
           CYPRESS_API_URL: ${{ secrets.CYPRESS_API_URL }}

@@ -185,7 +185,7 @@ export const ProjectSummaryPage: FC<ProjectSummaryPageProps> = (props) => {
           false
         );
       })
-      .then(() => {
+      .then(async () => {
         return handleFetchData();
       })
       .then(() => {
@@ -227,7 +227,9 @@ export const ProjectSummaryPage: FC<ProjectSummaryPageProps> = (props) => {
       if (!isEditMode) {
         handleCreateProjectSummary(values, message);
       }
-      handleUpdateProjectSummary(values, message);
+      if (projectGuid && projectSummaryGuid) {
+        handleUpdateProjectSummary(values, message);
+      }
     }
     handleTabChange(newActiveTab);
   };
@@ -244,7 +246,9 @@ export const ProjectSummaryPage: FC<ProjectSummaryPageProps> = (props) => {
       if (!isEditMode) {
         handleCreateProjectSummary(values, message);
       }
-      handleUpdateProjectSummary(values, message);
+      if (projectGuid && projectSummaryGuid) {
+        handleUpdateProjectSummary(values, message);
+      }
     }
     handleTabChange(newActiveTab);
   };

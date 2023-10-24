@@ -10,7 +10,7 @@ import { indexOf } from "lodash";
 const { Item } = Menu;
 
 const propTypes = {
-  children: PropTypes.arrayOf(PropTypes.node).isRequired,
+  children: PropTypes.arrayOf(PropTypes.any).isRequired,
   handleTabChange: PropTypes.func.isRequired,
   handleSaveDraft: PropTypes.func,
   handleSaveData: PropTypes.func,
@@ -120,7 +120,7 @@ const SteppedForm = (props) => {
             <Row justify={isFirst && tabs.length > 1 ? "end" : "space-between"}>
               {!isFirst && (
                 <Button
-                  type="primary"
+                  type="secondary"
                   onClick={() => handleTabClick(tabs[tabIndex - 1])}
                   disabled={isSubmitting}
                 >
@@ -154,11 +154,11 @@ const SteppedForm = (props) => {
                     </Button>
                   )}
                   <Button
-                    type="secondary"
+                    type="primary"
                     disabled={isSubmitting}
                     onClick={(e) => handleNextClick(e, tabs[tabIndex + 1])}
                   >
-                    Next <RightOutlined />
+                    Save &amp; Continue <RightOutlined />
                   </Button>
                 </div>
               )}

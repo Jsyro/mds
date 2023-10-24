@@ -37,14 +37,14 @@ interface EngineerOfRecordProps {
   openModal: (value: any) => void;
   closeModal: () => void;
   uploadedFiles: IDocument[];
-  setUploadedFiles: (value: Partial<IDocument>) => void;
+  setUploadedFiles: (value: Partial<IDocument>[]) => void;
   mineGuid: string;
   partyRelationships: IMinePartyAppt[];
   loading?: boolean;
   mines: IMine[];
 }
 
-const columns = (LinkButton): ColumnsType<IParty> => [
+const columns = (LinkButton): ColumnsType<IDocument> => [
   {
     title: "File Name",
     dataIndex: "document_name",
@@ -62,6 +62,8 @@ const columns = (LinkButton): ColumnsType<IParty> => [
 
 export const EngineerOfRecord: FC<EngineerOfRecordProps> = (props) => {
   const { mineGuid, uploadedFiles, setUploadedFiles, partyRelationships, loading, mines } = props;
+
+  const [openPopConfirm, setOpenPopConfirm] = useState(false);
 
   const {
     renderConfig,
@@ -103,7 +105,9 @@ export const EngineerOfRecord: FC<EngineerOfRecordProps> = (props) => {
   }, [partyRelationships]);
 
   const openCreateEORModal = (event) => {
-    event.preventDefault();
+    event?.preventDefault();
+    setOpenPopConfirm(false);
+
     props.openModal({
       props: {
         onSubmit: handleCreateEOR,
@@ -178,6 +182,22 @@ export const EngineerOfRecord: FC<EngineerOfRecordProps> = (props) => {
     (eor) => PARTY_APPOINTMENT_STATUS[eor.status] === PARTY_APPOINTMENT_STATUS.pending
   );
 
+  const hasCurrentEOR = formValues?.engineers_of_record?.some(
+    (eor) => PARTY_APPOINTMENT_STATUS[eor.status] === PARTY_APPOINTMENT_STATUS
+  );
+
+  const handleCreateEORModal = (newOpen: boolean) => {
+    if (!newOpen) {
+      setOpenPopConfirm(newOpen);
+      return;
+    }
+    if (hasCurrentEOR || hasPendingEOR) {
+      setOpenPopConfirm(true);
+    } else {
+      openCreateEORModal(undefined);
+    }
+  };
+
   return (
     <>
       <Row>
@@ -190,11 +210,14 @@ export const EngineerOfRecord: FC<EngineerOfRecordProps> = (props) => {
                 {canAssignEor && (
                   <Popconfirm
                     style={{ maxWidth: "150px" }}
+                    open={openPopConfirm}
                     placement="top"
                     title="Once acknowledged by the Ministry, assigning a new Engineer of Record will replace the current one and set the previous status to inactive. Continue?"
                     okText="Yes"
                     cancelText="No"
+                    onOpenChange={handleCreateEORModal}
                     onConfirm={openCreateEORModal}
+                    onCancel={() => setOpenPopConfirm(false)}
                   >
                     <Button style={{ display: "inline", float: "right" }} type="primary">
                       <PlusCircleFilled />
@@ -223,7 +246,7 @@ export const EngineerOfRecord: FC<EngineerOfRecordProps> = (props) => {
               />
             ) : (
               <Alert
-                description="There's no Engineer of Record (EOR) on file for this facility. Click above to assign a new Engineer of Record. A notification will be sent to the Ministry whereby their acknowledgment is required before the Engineer of Record is considered Active."
+                description="Assigning a new Engineer of Record (EoR) will replace the current listed contact and set their status to Inactive. When a new EoR is assigned, a notification will be sent to the Ministry of changes in the record, and must include an acknowledgement by the EoR to be active."
                 showIcon
                 type="info"
                 message={""}
@@ -292,7 +315,9 @@ export const EngineerOfRecord: FC<EngineerOfRecordProps> = (props) => {
           {!formValues?.engineer_of_record?.mine_party_appt_guid && (
             <>
               <div className="margin-large--top margin-large--bottom">
-                <Typography.Title level={4}>Upload Acceptance Letter</Typography.Title>
+                <Typography.Title level={4}>
+                  {!fieldsDisabled ? "Upload Acceptance Letter *" : "Upload Acceptance Letter"}
+                </Typography.Title>
                 <Typography.Text>
                   Letter must be officially signed. A notification will be sent to the Mine Manager
                   upon upload.
@@ -317,15 +342,20 @@ export const EngineerOfRecord: FC<EngineerOfRecordProps> = (props) => {
               />
             </>
           )}
+
           <Typography.Title level={4} className="margin-large--top">
             Engineer of Record Term
           </Typography.Title>
+          <Typography.Paragraph>
+            Enter the start, and if known, the end date of the Engineer of Record including a
+            termination date if applicable.
+          </Typography.Paragraph>
           <Row gutter={16}>
             <Col span={12}>
               <Field
                 id="engineer_of_record.start_date"
                 name="engineer_of_record.start_date"
-                label="Start Date"
+                label={!fieldsDisabled ? "Start Date *" : "Start Date"}
                 disabled={fieldsDisabled}
                 component={renderConfig.DATE}
                 validate={

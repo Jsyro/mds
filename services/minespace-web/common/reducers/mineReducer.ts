@@ -2,34 +2,34 @@ import { RootState } from "@/App";
 import * as actionTypes from "../constants/actionTypes";
 import { MINES } from "../constants/reducerTypes";
 import { createItemMap, createItemIdsArray } from "../utils/helpers";
-import { IMine, IMineComment, IMineDocument } from "@mds/common";
+import { IMine, IMineComment, IMineDocument, ItemMap } from "@mds/common";
 /**
  * @file mineReducer.js
  * all data associated with new mine/existing mine records is handled witnin this reducer.
  */
 interface MineState {
-  mines: IMine;
+  mines: ItemMap<IMine>;
   mineIds: string[];
   mineNameList: IMine[];
   minesPageData: IMine;
   mineGuid: string;
   mineBasicInfoList: IMine[];
   mineDocuments: IMineDocument[];
-  subscribedMines: IMine[];
+  subscribedMines: { records: IMine[]; loaded: boolean };
   mineComments: IMineComment[];
   currentUserVerifiedMines: IMine[];
   currentUserUnverifiedMinesMines: IMine[];
 }
 
 const initialState: MineState = {
-  mines: {},
+  mines: {} as ItemMap<IMine>,
   mineIds: [],
   mineNameList: [],
-  minesPageData: {},
+  minesPageData: {} as IMine,
   mineGuid: "",
   mineBasicInfoList: [],
   mineDocuments: [],
-  subscribedMines: [],
+  subscribedMines: { records: [], loaded: false },
   mineComments: [],
   currentUserVerifiedMines: [],
   currentUserUnverifiedMinesMines: [],
@@ -70,7 +70,7 @@ export const mineReducer = (state: MineState = initialState, action) => {
     case actionTypes.STORE_SUBSCRIBED_MINES:
       return {
         ...state,
-        subscribedMines: action.payload.mines,
+        subscribedMines: { records: action.payload.mines, loaded: true },
       };
     case actionTypes.STORE_CURRENT_USER_MINE_VERIFIED_STATUS:
       return {
@@ -94,14 +94,15 @@ const mineReducerObject = {
   [MINES]: mineReducer,
 };
 
-export const getMines = (state: RootState): IMine => state[MINES].mines;
+export const getMines = (state: RootState): ItemMap<IMine> => state[MINES].mines as ItemMap<IMine>;
 export const getMineIds = (state: RootState): string[] => state[MINES].mineIds;
 export const getMineNames = (state: RootState): IMine[] => state[MINES].mineNameList;
 export const getMinesPageData = (state: RootState): IMine => state[MINES].minesPageData;
 export const getMineGuid = (state: RootState): any => state[MINES].mineGuid;
 export const getMineBasicInfoList = (state: RootState): IMine[] => state[MINES].mineBasicInfoList;
 export const getMineDocuments = (state: RootState): IMineDocument[] => state[MINES].mineDocuments;
-export const getSubscribedMines = (state: RootState): IMine[] => state[MINES].subscribedMines;
+export const getSubscribedMines = (state: RootState): { records: IMine[]; loaded: boolean } =>
+  state[MINES].subscribedMines;
 export const getCurrentUserVerifiedMines = (state: RootState): IMine[] =>
   state[MINES].currentUserVerifiedMines;
 export const getCurrentUserUnverifiedMines = (state: RootState): IMine[] =>

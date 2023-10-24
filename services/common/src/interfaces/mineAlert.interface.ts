@@ -1,3 +1,8 @@
+export interface IMineAlertList {
+  records: IMineAlert[];
+  loaded: boolean;
+}
+
 export interface IMineAlert {
   mine_alert_id: number;
   mine_alert_guid: string;
@@ -12,4 +17,6 @@ export interface IMineAlert {
   create_timestamp: string;
   update_user: string;
   update_timestamp: string;
+  mine_name?: string;
+  mine_no?: string;
 }

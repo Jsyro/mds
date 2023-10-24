@@ -18,11 +18,12 @@ from flask_restx import Resource, reqparse, marshal_with
 
 from app.docman.models.document import Document
 from app.docman.models.document_version import DocumentVersion
-from app.extensions import api, cache
+from app.extensions import api, cache, getJwtManager
 from app.docman.response_models import DOCUMENT_MODEL
 from app.utils.access_decorators import requires_any_of, DOCUMENT_UPLOAD_ROLES, VIEW_ALL, MINESPACE_PROPONENT, GIS
 from app.constants import OBJECT_STORE_PATH, OBJECT_STORE_UPLOAD_RESOURCE, FILE_UPLOAD_SIZE, FILE_UPLOAD_OFFSET, FILE_UPLOAD_PATH, FILE_UPLOAD_EXPIRY, DOWNLOAD_TOKEN, TIMEOUT_24_HOURS, TUS_API_VERSION, TUS_API_SUPPORTED_VERSIONS, FORBIDDEN_FILETYPES
 from app.config import Config
+from app.utils.include.user_info import User
 
 CACHE_TIMEOUT = TIMEOUT_24_HOURS
 
@@ -49,11 +50,17 @@ class DocumentListResource(Resource):
         # Create the path string for this file
         document_guid = str(uuid.uuid4())
         base_folder = Config.UPLOADED_DOCUMENT_DEST
+
+        # create dedicated folder for cypress test user
+        if User().get_user_username() == 'idir\\core-admin':
+            base_folder = os.path.join(base_folder, "cypress")
+
         folder = data.get('folder') or request.headers.get('Folder')
         folder = os.path.join(base_folder, folder)
         file_path = os.path.join(folder, document_guid)
         pretty_folder = data.get(
-            'pretty_folder') or request.headers.get('Pretty-Folder')
+            'pretty_folder') or request.headers.get('Pretty-Folder') or request.headers.get('Prettyfolder')
+
         pretty_path = os.path.join(base_folder, pretty_folder, filename)
 
         response, object_store_path = DocumentUploadHelper.initiate_document_upload(
@@ -78,7 +85,6 @@ class DocumentListResource(Resource):
         token_guid = request.args.get('token', '')
         as_attachment = request.args.get('as_attachment', None)
         document_guid = cache.get(DOWNLOAD_TOKEN(token_guid))
-        cache.delete(DOWNLOAD_TOKEN(token_guid))
         document_manager_version_guid = request.args.get(
             'document_manager_version_guid', None)
 
@@ -107,9 +113,10 @@ class DocumentListResource(Resource):
             )
         else:
             return send_file(
-                filename_or_fp=document.full_storage_path,
-                attachment_filename=document.file_display_name,
+                path_or_file=document.full_storage_path,
+                download_name=document.file_display_name,
                 as_attachment=as_attachment)
+        cache.delete(DOWNLOAD_TOKEN(token_guid))
 
 
 @api.route(f'/documents/<string:document_guid>')
@@ -188,6 +195,9 @@ class DocumentResource(Resource):
                 with open(file_path, 'r+b') as f:
                     f.seek(file_offset)
                     f.write(request.data)
+                document = Document.find_by_document_guid(document_guid)
+                document.status = 'Success'
+                document.save()
             except IOError as e:
                 current_app.logger.error(e)
                 raise InternalServerError('Unable to write to file')
@@ -355,3 +365,11 @@ class DocumentResource(Resource):
                     'progress': progress,
                 }
             return jsonify(response)
+
+    @api.route('/documents/<string:document_guid>/upload-status', methods=['GET'])
+    class DocumentUploadStatusResource(Resource):
+        def get(self, document_guid):
+            document = Document.find_by_document_guid(document_guid)
+            if not document:
+                raise NotFound('Document not found')
+            return {'status': document.status}
